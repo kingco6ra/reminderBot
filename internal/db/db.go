@@ -6,7 +6,7 @@ import (
 
 type Database struct {
 	connection *pgx.Conn
-	usersTable *UsersTable
+	UsersTable *UsersTable
 }
 
 func New(cfg pgx.ConnConfig) (*Database, error) {
@@ -17,8 +17,8 @@ func New(cfg pgx.ConnConfig) (*Database, error) {
 
 	db := &Database{
 		connection: conn,
-		usersTable: &UsersTable{conn},
+		UsersTable: &UsersTable{conn},
 	}
-	db.usersTable.createTable()
+	db.UsersTable.createTable()
 	return db, nil
 }
