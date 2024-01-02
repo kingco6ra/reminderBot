@@ -1,0 +1,8 @@
+PG_USER=reminder
+PG_PASSWORD=password
+PG_HOST=postgres
+PG_PORT=5432
+PG_DB_NAME=reminder
+
+TELEGRAM_BOT_API_KEY=...
+DEBUG=true
