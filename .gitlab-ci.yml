@@ -1,0 +1,13 @@
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - go build cmd/main.go
+
+test:
+  stage: test
+  script:
+    - go test -v ./...
