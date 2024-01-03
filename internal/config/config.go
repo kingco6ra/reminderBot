@@ -8,15 +8,20 @@ import (
 	"github.com/jackc/pgx"
 )
 
-
 type TelegramConfig struct {
 	BotAPIKey string
 	Debug     bool
 }
 
+type MetricsConfig struct {
+	Host string
+	Port string
+}
+
 type Config struct {
 	TelegramConfig TelegramConfig
 	PostgresConfig pgx.ConnConfig
+	MetricsConfig  MetricsConfig
 }
 
 func New() (*Config, error) {
@@ -25,7 +30,7 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
-	pgConfig := pgx.ConnConfig{
+	pgCfg := pgx.ConnConfig{
 		User:     getEnv("PG_USER"),
 		Password: getEnv("PG_PASSWORD"),
 		Host:     getEnv("PG_HOST"),
@@ -33,7 +38,7 @@ func New() (*Config, error) {
 		Database: getEnv("PG_DB_NAME"),
 	}
 
-	tgConfig := TelegramConfig{
+	tgCfg := TelegramConfig{
 		BotAPIKey: getEnv("TELEGRAM_BOT_API_KEY"),
 	}
 
@@ -42,11 +47,17 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
-	tgConfig.Debug = debug
+	tgCfg.Debug = debug
+
+	metricsCfg := MetricsConfig{
+		Host: getEnv("METRICS_HOST"),
+		Port: getEnv("METRICS_PORT"),
+	}
 
 	return &Config{
-		TelegramConfig: tgConfig,
-		PostgresConfig: pgConfig,
+		TelegramConfig: tgCfg,
+		PostgresConfig: pgCfg,
+		MetricsConfig:  metricsCfg,
 	}, nil
 }
 

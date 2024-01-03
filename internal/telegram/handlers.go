@@ -3,6 +3,7 @@ package telegram
 import (
 	"reminderBot/internal/db"
 	"reminderBot/internal/languages"
+	"reminderBot/pkg/metrics"
 	"reminderBot/pkg/utils"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -19,9 +20,10 @@ var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
 func startHandler(b *Bot, u *tgbotapi.Update) {
 	user := db.User{UserID: int64(u.Message.From.ID)}
 	b.db.UsersTable.Insert(user)
-
 	msg := tgbotapi.NewMessage(user.UserID, WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
 	b.api.Send(msg)
+
+	metrics.IncCommand(u.Message.Command())
 }
 
 func menuHandler(b *Bot, u *tgbotapi.Update) {
@@ -29,6 +31,8 @@ func menuHandler(b *Bot, u *tgbotapi.Update) {
 	msg := tgbotapi.NewMessage(int64(u.Message.From.ID), MenuMessage[lang])
 	msg.ReplyMarkup = getMenuButtons(lang)
 	b.api.Send(msg)
+
+	metrics.IncCommand(u.Message.Command())
 }
 
 func locationHandler(b *Bot, u *tgbotapi.Update) {
@@ -44,4 +48,6 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	}
 	b.db.UsersTable.Update(user)
 	menuHandler(b, u)
+
+	metrics.IncCommand(u.Message.Command())
 }
