@@ -2,6 +2,7 @@ package db
 
 import (
 	"log"
+	"reminderBot/pkg/metrics"
 	"time"
 
 	"github.com/jackc/pgx"
@@ -60,7 +61,7 @@ func (ut *UsersTable) Insert(user User) {
 	if _, exists := ut.Select(user.UserID); exists {
 		return
 	}
-
+	metrics.NewUsersCounter.Inc()
 	_, err := ut.connection.Exec(
 		`INSERT INTO users (user_id, timezone, lat, lon) VALUES ($1, $2, $3, $4)`,
 		user.UserID, user.Timezone, user.Lat, user.Lon,

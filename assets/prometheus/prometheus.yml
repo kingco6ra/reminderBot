@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: 'reminder-monitor'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: 
+        - prometheus:9090
+
+  - job_name: 'reminder'
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: 
+        - reminder:8082

@@ -2,17 +2,48 @@ version: '3.8'
 
 services:
   reminder:
-    build: 
+    container_name: reminder
+    restart: always
+    build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
     healthcheck:
-      timeout: 5s
+      timeout: 15s
+      retries: 3
     depends_on:
-    - postgres
+      - postgres
+      - prometheus
 
   postgres:
-    image: postgres:latest     
+    container_name: postgres
+    image: postgres:latest
+    ports:
+      - "5432:5432"
     environment:
-      POSTGRES_DB: reminder  
-      POSTGRES_USER: reminder    
+      POSTGRES_DB: reminder
+      POSTGRES_USER: reminder
       POSTGRES_PASSWORD: password
+    depends_on:
+      - prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin_password
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./assets/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
