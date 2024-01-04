@@ -15,7 +15,6 @@ type config struct {
 	BotAPIKey         string
 	BotDebug          bool
 	PostgresDialector gorm.Dialector
-	MigrationPath     string
 	MetricsHost       string
 	MetricsPort       string
 }
@@ -24,9 +23,10 @@ var Config *config
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("No .env file found")
+		//log.Fatal("No .env file found")
 	}
 	Config = New()
+	log.Println("Load .env file completed.")
 }
 
 func New() *config {
@@ -46,7 +46,6 @@ func New() *config {
 		BotAPIKey:         getEnv("TELEGRAM_BOT_API_KEY"),
 		BotDebug:          botDebug,
 		PostgresDialector: pgDialector,
-		MigrationPath:	   getEnv("MIGRATION_PATH"),
 		MetricsHost:       getEnv("METRICS_HOST"),
 		MetricsPort:       getEnv("METRICS_PORT"),
 	}

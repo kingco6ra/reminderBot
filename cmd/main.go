@@ -2,18 +2,27 @@ package main
 
 import (
 	"log"
-	repo "reminderBot/internal/repositories"
+	"reminderBot/internal/repos"
+	"reminderBot/internal/services"
+	"reminderBot/pkg/utils"
 
 	tgbot "reminderBot/internal/telegram"
 )
 
 func main() {
-	db, err := repo.NewDB()
+	db, err := repos.NewDB()
 	if err != nil {
 		log.Fatal(err)
 	}
-	usersRepo := repo.NewUsersRepository(db)
-	bot, err := tgbot.New(usersRepo)
+
+	usersRepo := repos.NewUsersRepository(db)
+	usersService := services.NewUsersService(usersRepo)
+
+	remindersChannel := utils.MakeRemindersChannel()
+	remindersRepo := repos.NewRemindersRepository(db)
+	remindersService := services.NewReminderService(remindersRepo, &remindersChannel)
+
+	bot, err := tgbot.New(usersService, remindersService, &remindersChannel)
 	if err != nil {
 		log.Fatal(err)
 	}

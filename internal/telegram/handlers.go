@@ -2,9 +2,10 @@ package telegram
 
 import (
 	"reminderBot/internal/languages"
-	users "reminderBot/internal/repositories"
+	"reminderBot/internal/models"
 	"reminderBot/pkg/metrics"
 	"reminderBot/pkg/utils"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -14,12 +15,13 @@ var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
 	"start":    startHandler,
 	"menu":     menuHandler,
 	"location": locationHandler,
+	"remind":   remindHandler,
 }
 
 // startHandler returning welcome message & insert new user in DB.
 func startHandler(b *Bot, u *tgbotapi.Update) {
-	user := users.UserSchema{TelegramID: u.Message.From.ID}
-	b.repo.CreateUser(&user)
+	user := models.User{TelegramID: u.Message.From.ID}
+	b.usersService.CreateUser(&user)
 	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
 	b.api.Send(msg)
 
@@ -40,14 +42,24 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	Lon := u.Message.Location.Longitude
 	tz := utils.GetTimeZoneByLatLon(lat, Lon)
 
-	user := users.UserSchema{
+	user := models.User{
 		TelegramID: u.Message.From.ID,
 		Latitude:   &lat,
 		Longitude:  &Lon,
 		Timezone:   &tz,
 	}
-	b.repo.UpdateUser(&user)
+	b.usersService.UpdateUser(&user)
 	menuHandler(b, u)
 
 	metrics.IncCommand(u.Message.Command())
+}
+
+func remindHandler(b *Bot, u *tgbotapi.Update) {
+	reminder := models.Reminder{
+		TelegramUserID: u.Message.From.ID,
+		Description:    u.Message.Text,
+		RemindVia:      time.Now().Add(5 * time.Second),  // FIXME
+		Completed:      false,
+	}
+	b.remindersService.CreateReminder(&reminder)
 }
