@@ -2,7 +2,7 @@ package telegram
 
 import (
 	"reminderBot/internal/languages"
-	users "reminderBot/internal/repositories"
+	"reminderBot/internal/repos"
 	"reminderBot/pkg/metrics"
 	"reminderBot/pkg/utils"
 
@@ -18,7 +18,7 @@ var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
 
 // startHandler returning welcome message & insert new user in DB.
 func startHandler(b *Bot, u *tgbotapi.Update) {
-	user := users.UserSchema{TelegramID: u.Message.From.ID}
+	user := repos.UserSchema{TelegramID: u.Message.From.ID}
 	b.repo.CreateUser(&user)
 	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
 	b.api.Send(msg)
@@ -40,7 +40,7 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	Lon := u.Message.Location.Longitude
 	tz := utils.GetTimeZoneByLatLon(lat, Lon)
 
-	user := users.UserSchema{
+	user := repos.UserSchema{
 		TelegramID: u.Message.From.ID,
 		Latitude:   &lat,
 		Longitude:  &Lon,

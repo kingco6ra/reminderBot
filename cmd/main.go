@@ -2,17 +2,17 @@ package main
 
 import (
 	"log"
-	repo "reminderBot/internal/repositories"
+	"reminderBot/internal/repos"
 
 	tgbot "reminderBot/internal/telegram"
 )
 
 func main() {
-	db, err := repo.NewDB()
+	db, err := repos.NewDB()
 	if err != nil {
 		log.Fatal(err)
 	}
-	usersRepo := repo.NewUsersRepository(db)
+	usersRepo := repos.NewUsersRepository(db)
 	bot, err := tgbot.New(usersRepo)
 	if err != nil {
 		log.Fatal(err)

@@ -1,6 +1,5 @@
 // TODO: add contexts.
-package db
-
+package repos
 import (
 	cfg "reminderBot/internal/config"
 	"log"
