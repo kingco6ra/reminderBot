@@ -3,7 +3,7 @@ package telegram
 import (
 	"log"
 	"reminderBot/internal/config"
-	"reminderBot/internal/db"
+	users "reminderBot/internal/repositories"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -17,12 +17,12 @@ const (
 
 type Bot struct {
 	api       *tgbotapi.BotAPI
-	db        *db.Database
+	repo      *users.UsersRepository
 	handlers  map[string]func(b *Bot, u *tgbotapi.Update)
 	callbacks map[callback]func(b *Bot, u *tgbotapi.Update)
 }
 
-func New(cfg config.TelegramConfig, db *db.Database) (*Bot, error) {
+func New(cfg config.TelegramConfig, usersRepo *users.UsersRepository) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.BotAPIKey)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func New(cfg config.TelegramConfig, db *db.Database) (*Bot, error) {
 	api.Debug = cfg.Debug
 	return &Bot{
 		api:       api,
-		db:        db,
+		repo:      usersRepo,
 		handlers:  handlers,
 		callbacks: callbacks,
 	}, nil

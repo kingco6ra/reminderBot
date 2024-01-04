@@ -1,8 +1,8 @@
 package telegram
 
 import (
-	"reminderBot/internal/db"
 	"reminderBot/internal/languages"
+	users "reminderBot/internal/repositories"
 	"reminderBot/pkg/metrics"
 	"reminderBot/pkg/utils"
 
@@ -18,9 +18,9 @@ var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
 
 // startHandler returning welcome message & insert new user in DB.
 func startHandler(b *Bot, u *tgbotapi.Update) {
-	user := db.User{UserID: int64(u.Message.From.ID)}
-	b.db.UsersTable.Insert(user)
-	msg := tgbotapi.NewMessage(user.UserID, WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
+	user := users.UserSchema{TelegramID: u.Message.From.ID}
+	b.repo.CreateUser(&user)
+	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
 	b.api.Send(msg)
 
 	metrics.IncCommand(u.Message.Command())
@@ -40,13 +40,13 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	Lon := u.Message.Location.Longitude
 	tz := utils.GetTimeZoneByLatLon(lat, Lon)
 
-	user := db.User{
-		UserID:   int64(u.Message.From.ID),
-		Lat:      &lat,
-		Lon:      &Lon,
-		Timezone: &tz,
+	user := users.UserSchema{
+		TelegramID: u.Message.From.ID,
+		Latitude:   &lat,
+		Longitude:  &Lon,
+		Timezone:   &tz,
 	}
-	b.db.UsersTable.Update(user)
+	b.repo.UpdateUser(&user)
 	menuHandler(b, u)
 
 	metrics.IncCommand(u.Message.Command())

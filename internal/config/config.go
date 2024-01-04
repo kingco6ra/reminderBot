@@ -1,16 +1,22 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 
-	"github.com/jackc/pgx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type TelegramConfig struct {
 	BotAPIKey string
 	Debug     bool
+}
+
+type PostgresConfig struct {
+	PostgresDialector gorm.Dialector
 }
 
 type MetricsConfig struct {
@@ -20,24 +26,11 @@ type MetricsConfig struct {
 
 type Config struct {
 	TelegramConfig TelegramConfig
-	PostgresConfig pgx.ConnConfig
+	PostgresConfig PostgresConfig
 	MetricsConfig  MetricsConfig
 }
 
-func New() (*Config, error) {
-	pgPort, err := strconv.Atoi(getEnv("PG_PORT"))
-	if err != nil {
-		return nil, err
-	}
-
-	pgCfg := pgx.ConnConfig{
-		User:     getEnv("PG_USER"),
-		Password: getEnv("PG_PASSWORD"),
-		Host:     getEnv("PG_HOST"),
-		Port:     uint16(pgPort),
-		Database: getEnv("PG_DB_NAME"),
-	}
-
+func getTelegramConfig() (*TelegramConfig, error) {
 	tgCfg := TelegramConfig{
 		BotAPIKey: getEnv("TELEGRAM_BOT_API_KEY"),
 	}
@@ -49,15 +42,38 @@ func New() (*Config, error) {
 
 	tgCfg.Debug = debug
 
-	metricsCfg := MetricsConfig{
+	return &tgCfg, nil
+}
+
+func getPostgresConfig() PostgresConfig {
+	// dsn user=gorm password=gorm dbname=gorm port=9920
+	dsn := fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s port=%s",
+		getEnv("PG_USER"), getEnv("PG_PASSWORD"), getEnv("PG_DB_NAME"), getEnv("PG_HOST"), getEnv("PG_PORT"),
+	)
+	pgDialector := postgres.New(postgres.Config{DSN: dsn})
+	return PostgresConfig{
+		PostgresDialector: pgDialector,
+	}
+}
+
+func getMetricsConfig() MetricsConfig {
+	return MetricsConfig{
 		Host: getEnv("METRICS_HOST"),
 		Port: getEnv("METRICS_PORT"),
 	}
+}
+
+func New() (*Config, error) {
+	tgCfg, err := getTelegramConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Config{
-		TelegramConfig: tgCfg,
-		PostgresConfig: pgCfg,
-		MetricsConfig:  metricsCfg,
+		TelegramConfig: *tgCfg,
+		PostgresConfig: getPostgresConfig(),
+		MetricsConfig:  getMetricsConfig(),
 	}, nil
 }
 

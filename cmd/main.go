@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"reminderBot/internal/config"
-	"reminderBot/internal/db"
+	db "reminderBot/internal/repositories"
+	users "reminderBot/internal/repositories"
+
 	tgbot "reminderBot/internal/telegram"
-	"reminderBot/pkg/metrics"
 
 	"github.com/joho/godotenv"
 )
@@ -22,20 +22,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error parsing config value: %v\n", err)
 	}
-
-	db, err := db.New(cfg.PostgresConfig)
+	
+	db, err := db.NewDB(cfg.PostgresConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bot, err := tgbot.New(cfg.TelegramConfig, db)
+	usersRepo := users.NewUsersRepository(db)
+	bot, err := tgbot.New(cfg.TelegramConfig, usersRepo)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	go func() {
-		address := fmt.Sprintf("%s:%s", cfg.MetricsConfig.Host, cfg.MetricsConfig.Port)
-		_ = metrics.Listen(address)
-	}()
 	bot.Start()
 }
