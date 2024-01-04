@@ -47,6 +47,7 @@ func (b *Bot) Start() {
 	b.pollingUpdates()
 }
 
+// pollingUpdates polling user messages.
 func (b *Bot) pollingUpdates() {
 	log.Println("Start polling.")
 	u := tgbotapi.NewUpdate(0)
@@ -74,6 +75,7 @@ func (b *Bot) pollingUpdates() {
 	}
 }
 
+// pollingRemindersChannel reading reminders channel for notify user in messenger.
 func (b *Bot) pollingRemindersChannel() {
 	log.Println("Start reminders channel polling.")
 	for reminder := range *b.remindersChannel {
@@ -83,6 +85,7 @@ func (b *Bot) pollingRemindersChannel() {
 	log.Println("End reminders channel polling.")
 }
 
+// handleUpdate handle commands & callbacks.
 func (b *Bot) handleUpdate(u *tgbotapi.Update, t updateType) {
 	var request func(*Bot, *tgbotapi.Update)
 	var exists bool

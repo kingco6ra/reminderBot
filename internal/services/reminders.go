@@ -17,10 +17,11 @@ func NewReminderService(repo *repos.RemindersRepository, remindersChannel *chan 
 		repo:    repo,
 		channel: remindersChannel,
 	}
-	defer service.sendRemindersToChann()
+	defer service.massSendRemindersToChann()
 	return service
 }
 
+// sendReminderToChan pull one reminder in to channel query.
 func (service *RemindersService) sendReminderToChan(reminder models.Reminder) {
 	now := time.Now()
 	sub := reminder.RemindVia.Sub(now).Seconds()
@@ -29,7 +30,8 @@ func (service *RemindersService) sendReminderToChan(reminder models.Reminder) {
 	*service.channel <- reminder
 }
 
-func (service *RemindersService) sendRemindersToChann() {
+// massSendRemindersToChann usage on restart application for pull reminders in to channel.
+func (service *RemindersService) massSendRemindersToChann() {
 	log.Println("Start reminders channel sending.")
 	uncompletedReminders := service.GetAllUncompletedReminders()
 	for _, r := range uncompletedReminders {
