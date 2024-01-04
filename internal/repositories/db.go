@@ -1,13 +1,13 @@
 package db
 
 import (
-	"reminderBot/internal/config"
+	cfg "reminderBot/internal/config"
 
 	"gorm.io/gorm"
 )
 
-func NewDB(cfg config.PostgresConfig) (*gorm.DB, error) {
-	db, err := gorm.Open(cfg.PostgresDialector, &gorm.Config{})
+func NewDB() (*gorm.DB, error) {
+	db, err := gorm.Open(cfg.Config.PostgresDialector, &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

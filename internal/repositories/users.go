@@ -2,6 +2,8 @@
 package db
 
 import (
+	cfg "reminderBot/internal/config"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,8 +23,8 @@ type UsersRepository struct {
 }
 
 func NewUsersRepository(db *gorm.DB) *UsersRepository {
-	if err := db.AutoMigrate(&UserSchema{}); err != nil {
-		panic(err)
+	if err := db.AutoMigrate(&UserSchema{}, cfg.Config.MigrationPath); err != nil {
+		log.Fatal(err)
 	}
 	return &UsersRepository{db: db}
 }

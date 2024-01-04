@@ -6,75 +6,50 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type TelegramConfig struct {
-	BotAPIKey string
-	Debug     bool
-}
-
-type PostgresConfig struct {
+type config struct {
+	BotAPIKey         string
+	BotDebug          bool
 	PostgresDialector gorm.Dialector
+	MigrationPath     string
+	MetricsHost       string
+	MetricsPort       string
 }
 
-type MetricsConfig struct {
-	Host string
-	Port string
-}
+var Config *config
 
-type Config struct {
-	TelegramConfig TelegramConfig
-	PostgresConfig PostgresConfig
-	MetricsConfig  MetricsConfig
-}
-
-func getTelegramConfig() (*TelegramConfig, error) {
-	tgCfg := TelegramConfig{
-		BotAPIKey: getEnv("TELEGRAM_BOT_API_KEY"),
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("No .env file found")
 	}
+	Config = New()
+}
 
-	debug, err := strconv.ParseBool(getEnv("DEBUG"))
+func New() *config {
+	botDebug, err := strconv.ParseBool(getEnv("DEBUG"))
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	tgCfg.Debug = debug
-
-	return &tgCfg, nil
-}
-
-func getPostgresConfig() PostgresConfig {
 	// dsn user=gorm password=gorm dbname=gorm port=9920
 	dsn := fmt.Sprintf(
 		"user=%s password=%s dbname=%s host=%s port=%s",
 		getEnv("PG_USER"), getEnv("PG_PASSWORD"), getEnv("PG_DB_NAME"), getEnv("PG_HOST"), getEnv("PG_PORT"),
 	)
 	pgDialector := postgres.New(postgres.Config{DSN: dsn})
-	return PostgresConfig{
+
+	return &config{
+		BotAPIKey:         getEnv("TELEGRAM_BOT_API_KEY"),
+		BotDebug:          botDebug,
 		PostgresDialector: pgDialector,
+		MigrationPath:	   getEnv("MIGRATION_PATH"),
+		MetricsHost:       getEnv("METRICS_HOST"),
+		MetricsPort:       getEnv("METRICS_PORT"),
 	}
-}
-
-func getMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		Host: getEnv("METRICS_HOST"),
-		Port: getEnv("METRICS_PORT"),
-	}
-}
-
-func New() (*Config, error) {
-	tgCfg, err := getTelegramConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Config{
-		TelegramConfig: *tgCfg,
-		PostgresConfig: getPostgresConfig(),
-		MetricsConfig:  getMetricsConfig(),
-	}, nil
 }
 
 func getEnv(key string) string {
