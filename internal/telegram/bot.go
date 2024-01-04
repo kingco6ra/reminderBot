@@ -3,7 +3,8 @@ package telegram
 import (
 	"log"
 	cfg "reminderBot/internal/config"
-	"reminderBot/internal/repos"
+	"reminderBot/internal/models"
+	"reminderBot/internal/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -16,33 +17,42 @@ const (
 )
 
 type Bot struct {
-	api       *tgbotapi.BotAPI
-	repo      *repos.UsersRepository
-	handlers  map[string]func(b *Bot, u *tgbotapi.Update)
-	callbacks map[callback]func(b *Bot, u *tgbotapi.Update)
+	api              *tgbotapi.BotAPI
+	usersService     *services.UsersService
+	remindersService *services.RemindersService
+	remindersChannel *chan models.Reminder
+	handlers         map[string]func(b *Bot, u *tgbotapi.Update)
+	callbacks        map[callback]func(b *Bot, u *tgbotapi.Update)
 }
 
-func New(usersRepo *repos.UsersRepository) (*Bot, error) {
+func New(usersService *services.UsersService, remindersService *services.RemindersService, remindersChannel *chan models.Reminder) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.Config.BotAPIKey)
 	if err != nil {
 		return nil, err
 	}
 	api.Debug = cfg.Config.BotDebug
 	return &Bot{
-		api:       api,
-		repo:      usersRepo,
-		handlers:  handlers,
-		callbacks: callbacks,
+		api:              api,
+		usersService:     usersService,
+		remindersService: remindersService,
+		remindersChannel: remindersChannel,
+		handlers:         handlers,
+		callbacks:        callbacks,
 	}, nil
 }
 
 func (b *Bot) Start() {
 	log.Println("Starting bot.")
+	go b.pollingRemindersChannel()
+	b.pollingUpdates()
+}
+
+func (b *Bot) pollingUpdates() {
+	log.Println("Start polling.")
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, _ := b.api.GetUpdatesChan(u)
 
-	log.Println("Start polling.")
 	for update := range updates {
 		if update.CallbackQuery != nil {
 			go b.handleUpdate(&update, clb)
@@ -62,6 +72,15 @@ func (b *Bot) Start() {
 			go b.handleUpdate(&update, cmd)
 		}
 	}
+}
+
+func (b *Bot) pollingRemindersChannel() {
+	log.Println("Start reminders channel polling.")
+	for reminder := range *b.remindersChannel {
+		msg := tgbotapi.NewMessage(int64(reminder.TelegramUserID), reminder.Description)
+		b.api.Send(msg)
+	}
+	log.Println("End reminders channel polling.")
 }
 
 func (b *Bot) handleUpdate(u *tgbotapi.Update, t updateType) {

@@ -1,8 +1,10 @@
 package metrics
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	cfg "reminderBot/internal/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,9 +32,11 @@ func IncCommand(command string) {
 func init() {
 	prometheus.MustRegister(TelegramCommandsCounter)
 	prometheus.MustRegister(NewUsersCounter)
+	go Listen()
 }
 
-func Listen(address string) error {
+func Listen() error {
+	address := fmt.Sprintf("%s:%s", cfg.Config.MetricsHost, cfg.Config.MetricsPort)
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	log.Printf("Metrics server is starting at %s\n", address)
