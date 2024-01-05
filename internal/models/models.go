@@ -20,6 +20,6 @@ type Reminder struct {
 	gorm.Model
 	TelegramUserID int
 	Description    string
-	RemindVia      time.Time
+	ReminderTime      time.Time
 	Completed      bool
 }

@@ -8,6 +8,7 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
+	gorm.io/plugin/prometheus v0.1.0
 )
 
 require (
@@ -23,7 +24,6 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect

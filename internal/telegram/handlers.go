@@ -28,6 +28,7 @@ func startHandler(b *Bot, u *tgbotapi.Update) {
 	metrics.IncCommand(u.Message.Command())
 }
 
+// menuHandler returning menu message with buttons.
 func menuHandler(b *Bot, u *tgbotapi.Update) {
 	lang := languages.Language(u.Message.From.LanguageCode)
 	msg := tgbotapi.NewMessage(int64(u.Message.From.ID), MenuMessage[lang])
@@ -37,6 +38,7 @@ func menuHandler(b *Bot, u *tgbotapi.Update) {
 	metrics.IncCommand(u.Message.Command())
 }
 
+// locationHandler write user lat/lon and TZ in DB & returning menu.
 func locationHandler(b *Bot, u *tgbotapi.Update) {
 	lat := u.Message.Location.Latitude
 	Lon := u.Message.Location.Longitude
@@ -54,12 +56,14 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	metrics.IncCommand(u.Message.Command())
 }
 
+// remindHandler set reminder for user.
 func remindHandler(b *Bot, u *tgbotapi.Update) {
 	reminder := models.Reminder{
 		TelegramUserID: u.Message.From.ID,
 		Description:    u.Message.Text,
-		RemindVia:      time.Now().Add(5 * time.Second),  // FIXME
+		ReminderTime:   time.Now().Add(5 * time.Second), // FIXME
 		Completed:      false,
 	}
+	go b.remind(reminder)
 	b.remindersService.CreateReminder(&reminder)
 }

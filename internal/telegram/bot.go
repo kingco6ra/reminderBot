@@ -1,69 +1,83 @@
 package telegram
 
 import (
+	"context"
 	"log"
 	cfg "reminderBot/internal/config"
 	"reminderBot/internal/models"
 	"reminderBot/internal/services"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+// updateType defines the type of update (command or callback).
 type updateType int
 
 const (
-	cmd updateType = iota
-	clb
+	cmd updateType = iota // Command
+	clb                   // Callback
 )
 
+// Bot represents a structure for working with Telegram bot.
 type Bot struct {
+	ctx              context.Context
 	api              *tgbotapi.BotAPI
 	usersService     *services.UsersService
 	remindersService *services.RemindersService
-	remindersChannel *chan models.Reminder
-	handlers         map[string]func(b *Bot, u *tgbotapi.Update)
-	callbacks        map[callback]func(b *Bot, u *tgbotapi.Update)
 }
 
-func New(usersService *services.UsersService, remindersService *services.RemindersService, remindersChannel *chan models.Reminder) (*Bot, error) {
+// NewBot creates a new instance of Bot.
+func NewBot(ctx context.Context, usersService *services.UsersService, remindersService *services.RemindersService) *Bot {
 	api, err := tgbotapi.NewBotAPI(cfg.Config.BotAPIKey)
 	if err != nil {
-		return nil, err
+		log.Fatal("Failed to create Bot API:", err)
 	}
 	api.Debug = cfg.Config.BotDebug
 	return &Bot{
+		ctx:              ctx,
 		api:              api,
 		usersService:     usersService,
 		remindersService: remindersService,
-		remindersChannel: remindersChannel,
-		handlers:         handlers,
-		callbacks:        callbacks,
-	}, nil
+	}
 }
 
+// Start launches bot and begins listening for updates.
 func (b *Bot) Start() {
-	log.Println("Starting bot.")
-	go b.pollingRemindersChannel()
-	b.pollingUpdates()
+	log.Println("Start telegram bot.")
+	var wg sync.WaitGroup
+    wg.Add(2)
+
+    go func() {
+        defer wg.Done()
+        b.pollingUpdates()
+    }()
+
+    go func() {
+        defer wg.Done()
+        b.massRemind()
+    }()
+
+    wg.Wait()
+	log.Println("Stop bot.")
 }
 
-// pollingUpdates polling user messages.
+// pollingUpdates polls updates from users.
 func (b *Bot) pollingUpdates() {
-	log.Println("Start polling.")
+	log.Println("Start polling telegram updates.")
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
-	updates, _ := b.api.GetUpdatesChan(u)
+	updates, err := b.api.GetUpdatesChan(u)
+	if err != nil {
+		log.Printf("Failed to get updates: %v", err)
+	}
 
 	for update := range updates {
 		if update.CallbackQuery != nil {
 			go b.handleUpdate(&update, clb)
-		}
-
-		if update.Message != nil && update.Message.IsCommand() {
+		} else if update.Message.IsCommand() {
 			go b.handleUpdate(&update, cmd)
-		}
-
-		if update.Message != nil && update.Message.Location != nil {
+		} else if update.Message.Location != nil {
 			// TODO: fix this shit
 			var msgEntity []tgbotapi.MessageEntity
 			locCommand := "/location"
@@ -73,30 +87,50 @@ func (b *Bot) pollingUpdates() {
 			go b.handleUpdate(&update, cmd)
 		}
 	}
+	log.Println("Stop polling telegram updates.")
 }
 
-// pollingRemindersChannel reading reminders channel for notify user in messenger.
-func (b *Bot) pollingRemindersChannel() {
-	log.Println("Start reminders channel polling.")
-	for reminder := range *b.remindersChannel {
-		msg := tgbotapi.NewMessage(int64(reminder.TelegramUserID), reminder.Description)
-		b.api.Send(msg)
+// remind sends reminders for scheduled events.
+func (b *Bot) remind(r models.Reminder) {
+	withDeadline, cancel := context.WithDeadline(b.ctx, r.ReminderTime)
+	defer cancel()
+
+	select {
+	case <-withDeadline.Done():
+		b.sendReminder(r)
+	case <-b.ctx.Done():
+		return
 	}
-	log.Println("End reminders channel polling.")
+}
+
+// massRemind starts mass reminders for all uncompleted events.
+func (b *Bot) massRemind() {
+	log.Println("Start mass remind.")
+	reminders := b.remindersService.GetAllUncompletedReminders()
+	for _, r := range reminders {
+		go b.remind(r)
+	}
+	log.Printf("End mass remind. Reminders count - %d.", len(reminders))
+}
+
+// sendReminder sends a reminder message to the specified user.
+func (b *Bot) sendReminder(r models.Reminder) {
+	msg := tgbotapi.NewMessage(int64(r.TelegramUserID), r.Description)
+	b.api.Send(msg)
 }
 
 // handleUpdate handle commands & callbacks.
-func (b *Bot) handleUpdate(u *tgbotapi.Update, t updateType) {
+func (b *Bot) handleUpdate(u *tgbotapi.Update, ut updateType) {
 	var request func(*Bot, *tgbotapi.Update)
 	var exists bool
 
-	switch t {
+	switch ut {
 	case cmd:
 		param := u.Message.Command()
-		request, exists = b.handlers[param]
+		request, exists = handlers[param]
 	case clb:
 		param := callback(u.CallbackQuery.Data)
-		request, exists = b.callbacks[param]
+		request, exists = callbacks[param]
 	default:
 		return
 	}

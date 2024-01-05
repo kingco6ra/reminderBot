@@ -16,7 +16,7 @@ type config struct {
 	BotDebug          bool
 	PostgresDialector gorm.Dialector
 	MetricsHost       string
-	MetricsPort       string
+	MetricsPort       uint32
 }
 
 var Config *config
@@ -42,12 +42,17 @@ func New() *config {
 	)
 	pgDialector := postgres.New(postgres.Config{DSN: dsn})
 
+	metricsPort, err := strconv.Atoi(getEnv("METRICS_PORT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &config{
 		BotAPIKey:         getEnv("TELEGRAM_BOT_API_KEY"),
 		BotDebug:          botDebug,
 		PostgresDialector: pgDialector,
 		MetricsHost:       getEnv("METRICS_HOST"),
-		MetricsPort:       getEnv("METRICS_PORT"),
+		MetricsPort:       uint32(metricsPort),
 	}
 }
 
