@@ -27,7 +27,7 @@ func (repo *RemindersRepository) CreateReminder(reminder *models.Reminder) error
 // GetAllUncompletedReminders returning all uncompleted reminders for remind.
 func (repo *RemindersRepository) GetAllUncompletedReminders() []models.Reminder {
 	var reminders []models.Reminder
-	repo.db.Where("completed = ? AND remind_via >= ?", false, time.Now().UTC()).Find(&reminders)
+	repo.db.Where("completed = ? AND reminder_time >= ?", false, time.Now().UTC()).Find(&reminders)
 	return reminders
 }
 

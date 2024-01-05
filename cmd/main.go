@@ -1,30 +1,32 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os/signal"
 	"reminderBot/internal/repos"
 	"reminderBot/internal/services"
-	"reminderBot/pkg/utils"
+	"syscall"
 
-	tgbot "reminderBot/internal/telegram"
+	"reminderBot/internal/telegram"
 )
 
 func main() {
-	db, err := repos.NewDB()
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+	runApp(ctx)
+}
 
+func runApp(ctx context.Context) {
+	db := repos.NewDB()
 	usersRepo := repos.NewUsersRepository(db)
 	usersService := services.NewUsersService(usersRepo)
-
-	remindersChannel := utils.MakeRemindersChannel()
 	remindersRepo := repos.NewRemindersRepository(db)
-	remindersService := services.NewReminderService(remindersRepo, &remindersChannel)
+	remindersService := services.NewReminderService(remindersRepo)
 
-	bot, err := tgbot.New(usersService, remindersService, &remindersChannel)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bot.Start()
+	bot := telegram.NewBot(ctx, usersService, remindersService)
+	go bot.Start()
+	
+	<- ctx.Done()
+	log.Println("Shutting down...")
 }
