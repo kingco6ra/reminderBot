@@ -18,6 +18,7 @@ func main() {
 }
 
 func runApp(ctx context.Context) {
+	log.Println("Start application.")
 	db := repos.NewDB()
 	usersRepo := repos.NewUsersRepository(db)
 	usersService := services.NewUsersService(usersRepo)
@@ -25,7 +26,7 @@ func runApp(ctx context.Context) {
 	remindersService := services.NewReminderService(remindersRepo)
 
 	bot := telegram.NewBot(ctx, usersService, remindersService)
-	go bot.Start()
+	bot.Start()
 	
 	<- ctx.Done()
 	log.Println("Shutting down...")

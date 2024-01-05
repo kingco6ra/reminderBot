@@ -6,7 +6,6 @@ import (
 	cfg "reminderBot/internal/config"
 	"reminderBot/internal/models"
 	"reminderBot/internal/services"
-	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -45,20 +44,11 @@ func NewBot(ctx context.Context, usersService *services.UsersService, remindersS
 // Start launches bot and begins listening for updates.
 func (b *Bot) Start() {
 	log.Println("Start telegram bot.")
-	var wg sync.WaitGroup
-    wg.Add(2)
 
-    go func() {
-        defer wg.Done()
-        b.pollingUpdates()
-    }()
+	b.massRemind()
+	b.pollingUpdates()
 
-    go func() {
-        defer wg.Done()
-        b.massRemind()
-    }()
-
-    wg.Wait()
+	<-b.ctx.Done()
 	log.Println("Stop bot.")
 }
 
@@ -69,25 +59,33 @@ func (b *Bot) pollingUpdates() {
 	u.Timeout = 60
 	updates, err := b.api.GetUpdatesChan(u)
 	if err != nil {
-		log.Printf("Failed to get updates: %v", err)
+		log.Fatalln("Failed to get updates:", err)
 	}
 
-	for update := range updates {
-		if update.CallbackQuery != nil {
-			go b.handleUpdate(&update, clb)
-		} else if update.Message.IsCommand() {
-			go b.handleUpdate(&update, cmd)
-		} else if update.Message.Location != nil {
-			// TODO: fix this shit
-			var msgEntity []tgbotapi.MessageEntity
-			locCommand := "/location"
-			msgEntity = append(msgEntity, tgbotapi.MessageEntity{Type: "bot_command", Offset: 0, Length: len(locCommand)})
-			update.Message.Entities = &msgEntity
-			update.Message.Text = locCommand
-			go b.handleUpdate(&update, cmd)
+	for {
+		select {
+		case update := <-updates:
+			if update.CallbackQuery != nil {
+				go b.handleUpdate(&update, clb)
+
+			} else if update.Message.IsCommand() {
+				go b.handleUpdate(&update, cmd)
+				
+			} else if update.Message.Location != nil {
+				// TODO: fix this shit
+				var msgEntity []tgbotapi.MessageEntity
+				locCommand := "/location"
+				msgEntity = append(msgEntity, tgbotapi.MessageEntity{Type: "bot_command", Offset: 0, Length: len(locCommand)})
+				update.Message.Entities = &msgEntity
+				update.Message.Text = locCommand
+				go b.handleUpdate(&update, cmd)
+			}
+
+		case <-b.ctx.Done():
+			log.Println("Stop polling telegram updates.")
+			return
 		}
 	}
-	log.Println("Stop polling telegram updates.")
 }
 
 // remind sends reminders for scheduled events.
@@ -135,7 +133,8 @@ func (b *Bot) handleUpdate(u *tgbotapi.Update, ut updateType) {
 		return
 	}
 
-	if exists {
-		request(b, u)
+	if !exists {
+		log.Println("Unknown params for handleUpdate:", u)
 	}
+	request(b, u)
 }
