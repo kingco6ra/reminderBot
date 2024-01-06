@@ -30,7 +30,6 @@ func (repo *RemindersRepository) GetAllUncompletedReminders() []models.Reminder 
 	repo.db.Where("completed = ? AND reminder_time >= ?", false, time.Now().UTC()).Find(&reminders)
 	return reminders
 }
-
 // GetUserReminders returning user reminders with selected status.
 func (repo *RemindersRepository) GetUserReminders(telegramUserID int) []models.Reminder {
 	var reminders []models.Reminder

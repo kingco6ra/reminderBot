@@ -1,5 +1,5 @@
 // Templates for messages.
-package telegram
+package tg
 
 import "reminderBot/tools/languages"
 

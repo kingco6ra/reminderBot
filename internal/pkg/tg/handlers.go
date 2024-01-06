@@ -1,4 +1,4 @@
-package telegram
+package tg
 
 import (
 	"reminderBot/internal/pkg/models"
@@ -59,13 +59,4 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 
 // remindHandler set reminder for user.
 func remindHandler(b *Bot, u *tgbotapi.Update) {
-	// FIXME: mb use nlp model for get time from text?
-	// reminder := models.Reminder{
-	// 	TelegramUserID: u.Message.From.ID,
-	// 	Description:    u.Message.Text,
-	// 	ReminderTime:   time.Now().Add(5 * time.Second),
-	// 	Completed:      false,
-	// }
-	// go b.remind(reminder)
-	// b.remindersService.CreateReminder(&reminder)
 }

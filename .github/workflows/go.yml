@@ -12,6 +12,17 @@ on:
 jobs:
 
   build:
+    env:
+      PG_USER: "PG_USER"
+      PG_PASSWORD: "PG_PASSWORD"
+      PG_HOST: "PG_HOST"
+      PG_PORT: "PG_PORT"
+      PG_DB_NAME: "PG_DB_NAME"
+      TELEGRAM_BOT_API_KEY: "TELEGRAM_BOT_API_KEY"
+      DEBUG: "DEBUG"
+      METRICS_HOST: "METRICS_HOST"
+      METRICS_PORT: "METRICS_PORT"
+
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3

@@ -5,7 +5,7 @@ import (
 	"log"
 	"reminderBot/internal/pkg/repos"
 	"reminderBot/internal/pkg/services"
-	"reminderBot/internal/pkg/telegram"
+	"reminderBot/internal/pkg/tg"
 )
 
 func RunApp(ctx context.Context) {
@@ -16,7 +16,7 @@ func RunApp(ctx context.Context) {
 	remindersRepo := repos.NewRemindersRepository(db)
 	remindersService := services.NewReminderService(remindersRepo)
 
-	bot := telegram.NewBot(ctx, usersService, remindersService)
+	bot := tg.NewBot(ctx, usersService, remindersService)
 	bot.Start()
 
 	<-ctx.Done()

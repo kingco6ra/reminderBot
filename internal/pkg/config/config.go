@@ -23,7 +23,7 @@ var Config *config
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		//log.Fatal("No .env file found")
+		log.Fatal("No .env file found")
 	}
 	Config = New()
 	log.Println("Load .env file completed.")
