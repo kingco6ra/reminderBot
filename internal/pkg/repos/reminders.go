@@ -2,7 +2,7 @@ package repos
 
 import (
 	"log"
-	"reminderBot/internal/models"
+	"reminderBot/internal/pkg/models"
 	"time"
 
 	"gorm.io/gorm"

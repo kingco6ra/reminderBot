@@ -1,8 +1,8 @@
 package services
 
 import (
-	"reminderBot/internal/models"
-	"reminderBot/internal/repos"
+	"reminderBot/internal/pkg/models"
+	"reminderBot/internal/pkg/repos"
 )
 
 type UsersService struct {

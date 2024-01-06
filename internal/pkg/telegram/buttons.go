@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"reminderBot/internal/languages"
+	"reminderBot/tools/languages"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )

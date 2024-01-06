@@ -3,7 +3,7 @@ package repos
 
 import (
 	"log"
-	"reminderBot/internal/models"
+	"reminderBot/internal/pkg/models"
 
 	"gorm.io/gorm"
 )

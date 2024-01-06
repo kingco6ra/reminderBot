@@ -1,23 +1,14 @@
-package main
+package app
 
 import (
 	"context"
 	"log"
-	"os/signal"
-	"reminderBot/internal/repos"
-	"reminderBot/internal/services"
-	"syscall"
-
-	"reminderBot/internal/telegram"
+	"reminderBot/internal/pkg/repos"
+	"reminderBot/internal/pkg/services"
+	"reminderBot/internal/pkg/telegram"
 )
 
-func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-	runApp(ctx)
-}
-
-func runApp(ctx context.Context) {
+func RunApp(ctx context.Context) {
 	log.Println("Start application.")
 	db := repos.NewDB()
 	usersRepo := repos.NewUsersRepository(db)
@@ -27,7 +18,7 @@ func runApp(ctx context.Context) {
 
 	bot := telegram.NewBot(ctx, usersService, remindersService)
 	bot.Start()
-	
-	<- ctx.Done()
+
+	<-ctx.Done()
 	log.Println("Shutting down...")
 }
