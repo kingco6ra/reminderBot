@@ -1,7 +1,7 @@
 // Templates for messages.
 package telegram
 
-import "reminderBot/internal/languages"
+import "reminderBot/tools/languages"
 
 type Message map[languages.Language]string
 

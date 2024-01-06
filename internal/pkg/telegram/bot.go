@@ -3,9 +3,9 @@ package telegram
 import (
 	"context"
 	"log"
-	cfg "reminderBot/internal/config"
-	"reminderBot/internal/models"
-	"reminderBot/internal/services"
+	cfg "reminderBot/internal/pkg/config"
+	"reminderBot/internal/pkg/models"
+	"reminderBot/internal/pkg/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )

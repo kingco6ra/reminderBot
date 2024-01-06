@@ -1,11 +1,10 @@
 package telegram
 
 import (
-	"reminderBot/internal/languages"
-	"reminderBot/internal/models"
-	"reminderBot/pkg/metrics"
-	"reminderBot/pkg/utils"
-	"time"
+	"reminderBot/internal/pkg/models"
+	lang "reminderBot/tools/languages"
+	"reminderBot/tools/metrics"
+	tz "reminderBot/tools/timezones"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -22,7 +21,9 @@ var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
 func startHandler(b *Bot, u *tgbotapi.Update) {
 	user := models.User{TelegramID: u.Message.From.ID}
 	b.usersService.CreateUser(&user)
-	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[languages.Language(u.Message.From.LanguageCode)])
+
+	language := lang.GetLang(u.Message.From.LanguageCode)
+	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[language])
 	b.api.Send(msg)
 
 	metrics.IncCommand(u.Message.Command())
@@ -30,9 +31,9 @@ func startHandler(b *Bot, u *tgbotapi.Update) {
 
 // menuHandler returning menu message with buttons.
 func menuHandler(b *Bot, u *tgbotapi.Update) {
-	lang := languages.Language(u.Message.From.LanguageCode)
-	msg := tgbotapi.NewMessage(int64(u.Message.From.ID), MenuMessage[lang])
-	msg.ReplyMarkup = getMenuButtons(lang)
+	language := lang.GetLang(u.Message.From.LanguageCode)
+	msg := tgbotapi.NewMessage(int64(u.Message.From.ID), MenuMessage[language])
+	msg.ReplyMarkup = getMenuButtons(language)
 	b.api.Send(msg)
 
 	metrics.IncCommand(u.Message.Command())
@@ -42,7 +43,7 @@ func menuHandler(b *Bot, u *tgbotapi.Update) {
 func locationHandler(b *Bot, u *tgbotapi.Update) {
 	lat := u.Message.Location.Latitude
 	Lon := u.Message.Location.Longitude
-	tz := utils.GetTimeZoneByLatLon(lat, Lon)
+	tz := tz.GetTimeZoneByLatLon(lat, Lon)
 
 	user := models.User{
 		TelegramID: u.Message.From.ID,
@@ -58,12 +59,13 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 
 // remindHandler set reminder for user.
 func remindHandler(b *Bot, u *tgbotapi.Update) {
-	reminder := models.Reminder{
-		TelegramUserID: u.Message.From.ID,
-		Description:    u.Message.Text,
-		ReminderTime:   time.Now().Add(5 * time.Second), // FIXME
-		Completed:      false,
-	}
-	go b.remind(reminder)
-	b.remindersService.CreateReminder(&reminder)
+	// FIXME: mb use nlp model for get time from text?
+	// reminder := models.Reminder{
+	// 	TelegramUserID: u.Message.From.ID,
+	// 	Description:    u.Message.Text,
+	// 	ReminderTime:   time.Now().Add(5 * time.Second),
+	// 	Completed:      false,
+	// }
+	// go b.remind(reminder)
+	// b.remindersService.CreateReminder(&reminder)
 }

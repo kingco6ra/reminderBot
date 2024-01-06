@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	cfg "reminderBot/internal/config"
+	cfg "reminderBot/internal/pkg/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
