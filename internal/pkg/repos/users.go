@@ -16,6 +16,7 @@ func NewUsersRepository(db *gorm.DB) *UsersRepository {
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal(err)
 	}
+
 	return &UsersRepository{db: db}
 }
 
@@ -27,7 +28,9 @@ func (repo *UsersRepository) CreateUser(user *models.User) error {
 // GetUserByTelegramID get user by ID.
 func (repo *UsersRepository) GetUserByTelegramID(telegramID int) (*models.User, error) {
 	var user models.User
+
 	err := repo.db.Where("telegram_id = ?", telegramID).First(&user).Error
+	
 	return &user, err
 }
 

@@ -23,13 +23,15 @@ var Config *config
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		//log.Fatal("No .env file found")
+		log.Fatal("No .env file found")
 	}
-	Config = New()
+
+	Config = newConfig()
+
 	log.Println("Load .env file completed.")
 }
 
-func New() *config {
+func newConfig() *config {
 	botDebug, err := strconv.ParseBool(getEnv("DEBUG"))
 	if err != nil {
 		log.Fatal(err)
@@ -60,6 +62,8 @@ func getEnv(key string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
+	
 	log.Fatalf("Variable %s not found.\n", key)
+
 	return ""
 }

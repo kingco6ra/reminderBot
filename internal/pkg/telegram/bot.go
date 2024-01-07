@@ -32,7 +32,9 @@ func NewBot(ctx context.Context, usersService *services.UsersService, remindersS
 	if err != nil {
 		log.Fatal("Failed to create Bot API:", err)
 	}
+
 	api.Debug = cfg.Config.BotDebug
+	
 	return &Bot{
 		ctx:              ctx,
 		api:              api,
@@ -55,9 +57,11 @@ func (b *Bot) Start() {
 // pollingUpdates polls updates from users.
 func (b *Bot) pollingUpdates() {
 	log.Println("Start polling telegram updates.")
+
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := b.api.GetUpdatesChan(u)
+
 	if err != nil {
 		log.Fatalln("Failed to get updates:", err)
 	}
@@ -67,10 +71,8 @@ func (b *Bot) pollingUpdates() {
 		case update := <-updates:
 			if update.CallbackQuery != nil {
 				go b.handleUpdate(&update, clb)
-
 			} else if update.Message.IsCommand() {
 				go b.handleUpdate(&update, cmd)
-				
 			} else if update.Message.Location != nil {
 				// TODO: fix this shit
 				var msgEntity []tgbotapi.MessageEntity
@@ -104,10 +106,13 @@ func (b *Bot) remind(r models.Reminder) {
 // massRemind starts mass reminders for all uncompleted events.
 func (b *Bot) massRemind() {
 	log.Println("Start mass remind.")
+
 	reminders := b.remindersService.GetAllUncompletedReminders()
+
 	for _, r := range reminders {
 		go b.remind(r)
 	}
+
 	log.Printf("End mass remind. Reminders count - %d.", len(reminders))
 }
 
@@ -119,8 +124,10 @@ func (b *Bot) sendReminder(r models.Reminder) {
 
 // handleUpdate handle commands & callbacks.
 func (b *Bot) handleUpdate(u *tgbotapi.Update, ut updateType) {
-	var request func(*Bot, *tgbotapi.Update)
-	var exists bool
+	var (
+		request func(*Bot, *tgbotapi.Update)
+		exists bool
+	)
 
 	switch ut {
 	case cmd:
@@ -136,5 +143,6 @@ func (b *Bot) handleUpdate(u *tgbotapi.Update, ut updateType) {
 	if !exists {
 		log.Println("Unknown params for handleUpdate:", u)
 	}
+
 	request(b, u)
 }

@@ -10,6 +10,7 @@ import (
 
 func RunApp(ctx context.Context) {
 	log.Println("Start application.")
+	
 	db := repos.NewDB()
 	usersRepo := repos.NewUsersRepository(db)
 	usersService := services.NewUsersService(usersRepo)

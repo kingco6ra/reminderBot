@@ -32,6 +32,7 @@ func IncCommand(command string) {
 func init() {
 	prometheus.MustRegister(TelegramCommandsCounter)
 	prometheus.MustRegister(NewUsersCounter)
+
 	go Listen()
 }
 
@@ -40,5 +41,6 @@ func Listen() error {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	log.Printf("Metrics server is starting at %s\n", address)
+	
 	return http.ListenAndServe(address, mux)
 }
