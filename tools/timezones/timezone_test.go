@@ -1,4 +1,4 @@
-package utils
+package times
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ func TestGetTimeZoneByLatLon(t *testing.T) {
 		lat float64
 		lon float64
 	}
+	
 	tests := []struct {
 		name string
 		args args
@@ -31,6 +32,7 @@ func TestGetTimeZoneByLatLon(t *testing.T) {
 			want: "Asia/Yekaterinburg",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := GetTimeZoneByLatLon(tt.args.lat, tt.args.lon)

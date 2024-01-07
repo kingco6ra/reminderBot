@@ -1,4 +1,4 @@
-package utils
+package times
 
 import (
 	"encoding/json"
@@ -25,6 +25,8 @@ func GetTimeZoneByLatLon(lat, lon float64) string {
     }
 
     var jsonObject map[string]string
+    
     json.Unmarshal([]byte(body), &jsonObject)
+    
     return jsonObject["timezone_id"]
 }
