@@ -22,9 +22,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: reminder
-      POSTGRES_USER: reminder
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${{ env.DB_NAME }}
+      POSTGRES_USER: ${{ secrets.DB_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
     depends_on:
       - prometheus
 

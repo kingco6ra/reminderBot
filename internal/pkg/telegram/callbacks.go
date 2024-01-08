@@ -13,7 +13,7 @@ const (
 	settings   callback = "settings"
 )
 
-var callbacks = map[callback]func(b *Bot, u *tgbotapi.Update){
+var callbackHandlers = map[callback]func(b *Bot, u *tgbotapi.Update){
 	setRemind:  func(b *Bot, u *tgbotapi.Update) {},
 	getReminds: func(b *Bot, u *tgbotapi.Update) {},
 	help:       func(b *Bot, u *tgbotapi.Update) {},

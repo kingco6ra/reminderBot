@@ -1,0 +1,17 @@
+project: 
+  debug: ${{ env.PROJECT_DEBUG }}
+
+database:
+  host: ${{ env.DB_HOST }}
+  port: ${{ env.DB_PORT }}
+  user: ${{ secret.DB_USER }}
+  password: ${{ secrets.DB_PASSWORD }}
+  name: ${{ env.DB_NAME }}
+
+telegram:
+  token: ${{ secrets.TG_TOKEN }}
+  debug: ${{ env.TG_DEBUG }}
+
+metrics:
+  host: ${{ env.METRICS_HOST }}
+  port: ${{ env.METRICS_PORT }}
