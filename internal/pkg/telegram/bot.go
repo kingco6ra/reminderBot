@@ -12,14 +12,14 @@ import (
 
 // Bot represents a structure for working with Telegram bot.
 type Bot struct {
-	ctx              context.Context
-	api              *tgbotapi.BotAPI
-	usersService     *repos.UsersRepository
-	remindersService *repos.RemindersRepository
+	ctx          context.Context
+	api          *tgbotapi.BotAPI
+	usersRepo    repos.UserRepoInterface
+	reminderRepo repos.ReminderRepoInterface
 }
 
 // NewBot creates a new instance of Bot.
-func NewBot(usersService *repos.UsersRepository, remindersService *repos.RemindersRepository) (*Bot, error) {
+func NewBot(usersRepo repos.UserRepoInterface, reminderRepo repos.ReminderRepoInterface) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.Config.BotAPIKey)
 	if err != nil {
 		return nil, err
@@ -28,9 +28,9 @@ func NewBot(usersService *repos.UsersRepository, remindersService *repos.Reminde
 	api.Debug = cfg.Config.BotDebug
 
 	return &Bot{
-		api:              api,
-		usersService:     usersService,
-		remindersService: remindersService,
+		api:          api,
+		usersRepo:    usersRepo,
+		reminderRepo: reminderRepo,
 	}, nil
 }
 
@@ -85,7 +85,7 @@ func (b *Bot) remind(ctx context.Context, r models.Reminder) {
 func (b *Bot) massRemind(ctx context.Context) {
 	log.Println("Start mass remind.")
 
-	reminders := b.remindersService.GetAllUncompletedReminders()
+	reminders := b.reminderRepo.GetAllUncompletedReminders()
 
 	for _, r := range reminders {
 		go b.remind(ctx, r)

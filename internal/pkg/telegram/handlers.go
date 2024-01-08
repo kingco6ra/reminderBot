@@ -20,7 +20,7 @@ var commandHandlers = map[string]func(b *Bot, u *tgbotapi.Update){
 // startHandler returning welcome message & insert new user in DB.
 func startHandler(b *Bot, u *tgbotapi.Update) {
 	user := models.User{TelegramID: u.Message.From.ID}
-	b.usersService.CreateUser(&user)
+	b.usersRepo.CreateUser(&user)
 
 	language := lang.GetLang(u.Message.From.LanguageCode)
 	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[language])
@@ -52,7 +52,7 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 		Longitude:  &Lon,
 		Timezone:   &tz,
 	}
-	b.usersService.UpdateUser(&user)
+	b.usersRepo.UpdateUser(&user)
 	menuHandler(b, u)
 
 	metrics.TelegramCommandsCounter.WithLabelValues(u.Message.Command()).Inc()
