@@ -1,7 +1,6 @@
 package repos
 
 import (
-	"log"
 	cfg "reminderBot/internal/pkg/config"
 
 	"gorm.io/gorm"
@@ -9,11 +8,11 @@ import (
 )
 
 // NewDB creates a new instance of gorm.DB for connecting to the database.
-func NewDB() *gorm.DB {
+func NewDB() (*gorm.DB, error) {
 	// Open a connection to the database
 	db, err := gorm.Open(cfg.Config.PostgresDialector, &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to create connection to DB:", err)
+		return nil, err
 	}
 
 	// Use Prometheus middleware for collecting database metrics
@@ -31,5 +30,5 @@ func NewDB() *gorm.DB {
 		),
 	)
 
-	return db
+	return db, nil
 }

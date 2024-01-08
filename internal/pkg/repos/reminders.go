@@ -1,7 +1,6 @@
 package repos
 
 import (
-	"log"
 	"reminderBot/internal/pkg/models"
 	"time"
 
@@ -12,12 +11,12 @@ type RemindersRepository struct {
 	db *gorm.DB
 }
 
-func NewRemindersRepository(db *gorm.DB) *RemindersRepository {
+func NewRemindersRepository(db *gorm.DB) (*RemindersRepository, error) {
 	if err := db.AutoMigrate(&models.Reminder{}); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &RemindersRepository{db: db}
+	return &RemindersRepository{db: db}, nil
 }
 
 // CreateReminder create new user.

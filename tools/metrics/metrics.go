@@ -25,10 +25,6 @@ var NewUsersCounter = prometheus.NewCounter(
 	},
 )
 
-func IncCommand(command string) {
-	TelegramCommandsCounter.WithLabelValues(command).Inc()
-}
-
 func init() {
 	prometheus.MustRegister(TelegramCommandsCounter)
 	prometheus.MustRegister(NewUsersCounter)

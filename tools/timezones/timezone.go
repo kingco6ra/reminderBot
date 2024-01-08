@@ -4,29 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
 const tzAPIServer = "https://api.wheretheiss.at/v1/coordinates"
 
 func GetTimeZoneByLatLon(lat, lon float64) string {
-    fullURL := fmt.Sprintf("%s/%f,%f", tzAPIServer, lat, lon)
+	fullURL := fmt.Sprintf("%s/%f,%f", tzAPIServer, lat, lon)
 
-    response, err := http.Get(fullURL)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer response.Body.Close()
+	response, _ := http.Get(fullURL)
 
-    body, err := io.ReadAll(response.Body)
-    if err != nil {
-        log.Fatal(err)
-    }
+	defer response.Body.Close()
 
-    var jsonObject map[string]string
-    
-    json.Unmarshal([]byte(body), &jsonObject)
-    
-    return jsonObject["timezone_id"]
+	body, _ := io.ReadAll(response.Body)
+
+	var jsonObject map[string]string
+
+	json.Unmarshal([]byte(body), &jsonObject)
+
+	return jsonObject["timezone_id"]
 }

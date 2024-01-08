@@ -2,7 +2,6 @@
 package repos
 
 import (
-	"log"
 	"reminderBot/internal/pkg/models"
 
 	"gorm.io/gorm"
@@ -12,12 +11,12 @@ type UsersRepository struct {
 	db *gorm.DB
 }
 
-func NewUsersRepository(db *gorm.DB) *UsersRepository {
+func NewUsersRepository(db *gorm.DB) (*UsersRepository, error) {
 	if err := db.AutoMigrate(&models.User{}); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &UsersRepository{db: db}
+	return &UsersRepository{db: db}, nil
 }
 
 // CreateUser create new user.

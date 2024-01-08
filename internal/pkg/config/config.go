@@ -23,18 +23,23 @@ var Config *config
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("No .env file found")
+		panic("No .env file found")
 	}
 
-	Config = newConfig()
+	cfg, err := newConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	Config = cfg
 
 	log.Println("Load .env file completed.")
 }
 
-func newConfig() *config {
+func newConfig() (*config, error) {
 	botDebug, err := strconv.ParseBool(getEnv("DEBUG"))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// dsn user=gorm password=gorm dbname=gorm port=9920
@@ -46,7 +51,7 @@ func newConfig() *config {
 
 	metricsPort, err := strconv.Atoi(getEnv("METRICS_PORT"))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &config{
@@ -55,15 +60,13 @@ func newConfig() *config {
 		PostgresDialector: pgDialector,
 		MetricsHost:       getEnv("METRICS_HOST"),
 		MetricsPort:       uint32(metricsPort),
-	}
+	}, nil
 }
 
 func getEnv(key string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
-	
-	log.Fatalf("Variable %s not found.\n", key)
 
-	return ""
+	panic("Variable not found: " + key)
 }

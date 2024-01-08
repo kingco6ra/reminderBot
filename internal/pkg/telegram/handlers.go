@@ -9,8 +9,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-// handlers tg command: handler
-var handlers = map[string]func(b *Bot, u *tgbotapi.Update){
+// commandHandlers tg command: handler
+var commandHandlers = map[string]func(b *Bot, u *tgbotapi.Update){
 	"start":    startHandler,
 	"menu":     menuHandler,
 	"location": locationHandler,
@@ -26,7 +26,7 @@ func startHandler(b *Bot, u *tgbotapi.Update) {
 	msg := tgbotapi.NewMessage(int64(user.TelegramID), WelcomeMessage[language])
 	b.api.Send(msg)
 
-	metrics.IncCommand(u.Message.Command())
+	metrics.TelegramCommandsCounter.WithLabelValues(u.Message.Command()).Inc()
 }
 
 // menuHandler returning menu message with buttons.
@@ -36,14 +36,15 @@ func menuHandler(b *Bot, u *tgbotapi.Update) {
 	msg.ReplyMarkup = getMenuButtons(language)
 	b.api.Send(msg)
 
-	metrics.IncCommand(u.Message.Command())
+	metrics.TelegramCommandsCounter.WithLabelValues(u.Message.Command()).Inc()
 }
 
 // locationHandler write user lat/lon and TZ in DB & returning menu.
 func locationHandler(b *Bot, u *tgbotapi.Update) {
 	lat := u.Message.Location.Latitude
-	Lon := u.Message.Location.Longitude
+	Lon := u.Message.Location.Longitude	
 	tz := tz.GetTimeZoneByLatLon(lat, Lon)
+
 
 	user := models.User{
 		TelegramID: u.Message.From.ID,
@@ -54,7 +55,7 @@ func locationHandler(b *Bot, u *tgbotapi.Update) {
 	b.usersService.UpdateUser(&user)
 	menuHandler(b, u)
 
-	metrics.IncCommand(u.Message.Command())
+	metrics.TelegramCommandsCounter.WithLabelValues(u.Message.Command()).Inc()
 }
 
 // remindHandler set reminder for user.

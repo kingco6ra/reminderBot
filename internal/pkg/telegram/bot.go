@@ -5,57 +5,48 @@ import (
 	"log"
 	cfg "reminderBot/internal/pkg/config"
 	"reminderBot/internal/pkg/models"
-	"reminderBot/internal/pkg/services"
+	"reminderBot/internal/pkg/repos"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-)
-
-// updateType defines the type of update (command or callback).
-type updateType int
-
-const (
-	cmd updateType = iota // Command
-	clb                   // Callback
 )
 
 // Bot represents a structure for working with Telegram bot.
 type Bot struct {
 	ctx              context.Context
 	api              *tgbotapi.BotAPI
-	usersService     *services.UsersService
-	remindersService *services.RemindersService
+	usersService     *repos.UsersRepository
+	remindersService *repos.RemindersRepository
 }
 
 // NewBot creates a new instance of Bot.
-func NewBot(ctx context.Context, usersService *services.UsersService, remindersService *services.RemindersService) *Bot {
+func NewBot(usersService *repos.UsersRepository, remindersService *repos.RemindersRepository) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.Config.BotAPIKey)
 	if err != nil {
-		log.Fatal("Failed to create Bot API:", err)
+		return nil, err
 	}
 
 	api.Debug = cfg.Config.BotDebug
-	
+
 	return &Bot{
-		ctx:              ctx,
 		api:              api,
 		usersService:     usersService,
 		remindersService: remindersService,
-	}
+	}, nil
 }
 
 // Start launches bot and begins listening for updates.
-func (b *Bot) Start() {
+func (b *Bot) Start(ctx context.Context) {
 	log.Println("Start telegram bot.")
 
-	b.massRemind()
-	b.pollingUpdates()
+	b.massRemind(ctx)
+	b.pollingUpdates(ctx)
 
 	<-b.ctx.Done()
 	log.Println("Stop bot.")
 }
 
 // pollingUpdates polls updates from users.
-func (b *Bot) pollingUpdates() {
+func (b *Bot) pollingUpdates(ctx context.Context) {
 	log.Println("Start polling telegram updates.")
 
 	u := tgbotapi.NewUpdate(0)
@@ -69,21 +60,8 @@ func (b *Bot) pollingUpdates() {
 	for {
 		select {
 		case update := <-updates:
-			if update.CallbackQuery != nil {
-				go b.handleUpdate(&update, clb)
-			} else if update.Message.IsCommand() {
-				go b.handleUpdate(&update, cmd)
-			} else if update.Message.Location != nil {
-				// TODO: fix this shit
-				var msgEntity []tgbotapi.MessageEntity
-				locCommand := "/location"
-				msgEntity = append(msgEntity, tgbotapi.MessageEntity{Type: "bot_command", Offset: 0, Length: len(locCommand)})
-				update.Message.Entities = &msgEntity
-				update.Message.Text = locCommand
-				go b.handleUpdate(&update, cmd)
-			}
-
-		case <-b.ctx.Done():
+			go b.handleUpdate(&update)
+		case <-ctx.Done():
 			log.Println("Stop polling telegram updates.")
 			return
 		}
@@ -91,8 +69,8 @@ func (b *Bot) pollingUpdates() {
 }
 
 // remind sends reminders for scheduled events.
-func (b *Bot) remind(r models.Reminder) {
-	withDeadline, cancel := context.WithDeadline(b.ctx, r.ReminderTime)
+func (b *Bot) remind(ctx context.Context, r models.Reminder) {
+	withDeadline, cancel := context.WithDeadline(ctx, r.ReminderTime)
 	defer cancel()
 
 	select {
@@ -104,13 +82,13 @@ func (b *Bot) remind(r models.Reminder) {
 }
 
 // massRemind starts mass reminders for all uncompleted events.
-func (b *Bot) massRemind() {
+func (b *Bot) massRemind(ctx context.Context) {
 	log.Println("Start mass remind.")
 
 	reminders := b.remindersService.GetAllUncompletedReminders()
 
 	for _, r := range reminders {
-		go b.remind(r)
+		go b.remind(ctx, r)
 	}
 
 	log.Printf("End mass remind. Reminders count - %d.", len(reminders))
@@ -123,26 +101,40 @@ func (b *Bot) sendReminder(r models.Reminder) {
 }
 
 // handleUpdate handle commands & callbacks.
-func (b *Bot) handleUpdate(u *tgbotapi.Update, ut updateType) {
-	var (
-		request func(*Bot, *tgbotapi.Update)
-		exists bool
-	)
-
-	switch ut {
-	case cmd:
-		param := u.Message.Command()
-		request, exists = handlers[param]
-	case clb:
-		param := callback(u.CallbackQuery.Data)
-		request, exists = callbacks[param]
-	default:
-		return
+func (b *Bot) handleUpdate(u *tgbotapi.Update) {
+	if u.CallbackQuery != nil {
+		b.handleCallback(u)
+	} else if u.Message.IsCommand() {
+		b.handleCommand(u)
+	} else if u.Message.Location != nil {
+		// TODO: fix this shit
+		var msgEntity []tgbotapi.MessageEntity
+		locCommand := "/location"
+		msgEntity = append(msgEntity, tgbotapi.MessageEntity{Type: "bot_command", Offset: 0, Length: len(locCommand)})
+		u.Message.Entities = &msgEntity
+		u.Message.Text = locCommand
+		b.handleCommand(u)
+	} else {
+		log.Println("Unknown update type: ", u)
 	}
+}
 
-	if !exists {
-		log.Println("Unknown params for handleUpdate:", u)
+// handleCommand handling user command.
+func (b *Bot) handleCommand(u *tgbotapi.Update) {
+	cmd := u.Message.Command()
+	cmdHandler, exists := commandHandlers[cmd]
+
+	if exists {
+		cmdHandler(b, u)
 	}
+}
 
-	request(b, u)
+// handleCallback handling user callback.
+func (b *Bot) handleCallback(u *tgbotapi.Update) {
+	clb := callback(u.CallbackQuery.Data)
+	clbHandler, exists := callbackHandlers[clb]
+
+	if exists {
+		clbHandler(b, u)
+	}
 }
