@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log"
+	"reminderBot/internal/pkg/config"
 	"reminderBot/internal/pkg/repos"
 	"reminderBot/internal/pkg/telegram"
 )
@@ -10,7 +11,7 @@ import (
 func RunApp(ctx context.Context) {
 	log.Println("Start application.")
 
-	db, err := repos.NewDB()
+	db, err := repos.NewDB(config.Cfg.Database.GetPostgresDialector(), config.Cfg.Metrics.Port)
 	if err != nil {
 		log.Fatal("Failed to create connection to DB:", err)
 	}
@@ -25,7 +26,7 @@ func RunApp(ctx context.Context) {
 		log.Fatalln("Error during migration: ", err)
 	}
 
-	bot, err := telegram.NewBot(usersRepo, remindersRepo)
+	bot, err := telegram.NewBot(config.Cfg.Telegram.Token, config.Cfg.Telegram.Debug, usersRepo, remindersRepo)
 	if err != nil {
 		log.Fatalln(err)
 	}

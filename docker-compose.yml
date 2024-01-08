@@ -20,11 +20,11 @@ services:
     container_name: postgres
     image: postgres:latest
     ports:
-      - "5432:5432"
+      - "5432:${{ env.DB_PORT }}"
     environment:
-      POSTGRES_DB: reminder
-      POSTGRES_USER: reminder
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${{ env.DB_NAME }}
+      POSTGRES_USER: ${{ secrets.DB_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
     depends_on:
       - prometheus
 

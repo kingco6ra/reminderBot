@@ -3,7 +3,6 @@ package telegram
 import (
 	"context"
 	"log"
-	cfg "reminderBot/internal/pkg/config"
 	"reminderBot/internal/pkg/models"
 	"reminderBot/internal/pkg/repos"
 
@@ -12,20 +11,19 @@ import (
 
 // Bot represents a structure for working with Telegram bot.
 type Bot struct {
-	ctx          context.Context
 	api          *tgbotapi.BotAPI
 	usersRepo    repos.UserRepoInterface
 	reminderRepo repos.ReminderRepoInterface
 }
 
 // NewBot creates a new instance of Bot.
-func NewBot(usersRepo repos.UserRepoInterface, reminderRepo repos.ReminderRepoInterface) (*Bot, error) {
-	api, err := tgbotapi.NewBotAPI(cfg.Config.BotAPIKey)
+func NewBot(token string, debugMode bool, usersRepo repos.UserRepoInterface, reminderRepo repos.ReminderRepoInterface) (*Bot, error) {
+	api, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 
-	api.Debug = cfg.Config.BotDebug
+	api.Debug = debugMode
 
 	return &Bot{
 		api:          api,
@@ -41,63 +39,8 @@ func (b *Bot) Start(ctx context.Context) {
 	b.massRemind(ctx)
 	b.pollingUpdates(ctx)
 
-	<-b.ctx.Done()
+	<-ctx.Done()
 	log.Println("Stop bot.")
-}
-
-// pollingUpdates polls updates from users.
-func (b *Bot) pollingUpdates(ctx context.Context) {
-	log.Println("Start polling telegram updates.")
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-	updates, err := b.api.GetUpdatesChan(u)
-
-	if err != nil {
-		log.Fatalln("Failed to get updates:", err)
-	}
-
-	for {
-		select {
-		case update := <-updates:
-			go b.handleUpdate(&update)
-		case <-ctx.Done():
-			log.Println("Stop polling telegram updates.")
-			return
-		}
-	}
-}
-
-// remind sends reminders for scheduled events.
-func (b *Bot) remind(ctx context.Context, r models.Reminder) {
-	withDeadline, cancel := context.WithDeadline(ctx, r.ReminderTime)
-	defer cancel()
-
-	select {
-	case <-withDeadline.Done():
-		b.sendReminder(r)
-	case <-b.ctx.Done():
-		return
-	}
-}
-
-// massRemind starts mass reminders for all uncompleted events.
-func (b *Bot) massRemind(ctx context.Context) {
-	log.Println("Start mass remind.")
-
-	reminders := b.reminderRepo.GetAllUncompletedReminders()
-
-	for _, r := range reminders {
-		go b.remind(ctx, r)
-	}
-
-	log.Printf("End mass remind. Reminders count - %d.", len(reminders))
-}
-
-// sendReminder sends a reminder message to the specified user.
-func (b *Bot) sendReminder(r models.Reminder) {
-	msg := tgbotapi.NewMessage(int64(r.TelegramUserID), r.Description)
-	b.api.Send(msg)
 }
 
 // handleUpdate handle commands & callbacks.
@@ -126,7 +69,10 @@ func (b *Bot) handleCommand(u *tgbotapi.Update) {
 
 	if exists {
 		cmdHandler(b, u)
+		return
 	}
+
+	log.Println("Unknown command: ", cmd)
 }
 
 // handleCallback handling user callback.
@@ -136,5 +82,67 @@ func (b *Bot) handleCallback(u *tgbotapi.Update) {
 
 	if exists {
 		clbHandler(b, u)
+		return
 	}
+	
+	log.Println("Unknown callback: ", clb)
+}
+
+// pollingUpdates polls updates from users.
+func (b *Bot) pollingUpdates(ctx context.Context) {
+	log.Println("Start polling telegram updates.")
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+	updates, err := b.api.GetUpdatesChan(u)
+
+	if err != nil {
+		log.Fatalln("Failed to get updates:", err)
+	}
+
+	for {
+		select {
+		case update := <-updates:
+			go b.handleUpdate(&update)
+		case <-ctx.Done():
+			log.Println("Stop polling telegram updates.")
+			return
+		}
+	}
+}
+
+// sendReminder sends a reminder message to the specified user.
+func (b *Bot) sendReminder(r models.Reminder) {
+	msg := tgbotapi.NewMessage(int64(r.TelegramUserID), r.Description)
+	b.api.Send(msg)
+}
+
+// remind sends reminders for scheduled events.
+func (b *Bot) remind(ctx context.Context, r models.Reminder) {
+	withDeadline, cancel := context.WithDeadline(ctx, r.ReminderTime)
+	defer cancel()
+
+	select {
+	case <-withDeadline.Done():
+		b.sendReminder(r)
+	case <-ctx.Done():
+		return
+	}
+}
+
+// massRemind starts mass reminders for all uncompleted events.
+func (b *Bot) massRemind(ctx context.Context) {
+	log.Println("Start mass remind.")
+
+	reminders, err := b.reminderRepo.GetAllUncompletedReminders()
+	if err != nil {
+		log.Fatalln("Failed to get reminders: ", err)
+		return
+	}
+
+	for _, r := range reminders {
+		go b.remind(ctx, r)
+	}
+
+	log.Printf("End mass remind. Reminders count - %d.", len(reminders))
 }

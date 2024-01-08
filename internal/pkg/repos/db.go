@@ -1,16 +1,17 @@
 package repos
 
 import (
-	cfg "reminderBot/internal/pkg/config"
-
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/plugin/prometheus"
 )
 
 // NewDB creates a new instance of gorm.DB for connecting to the database.
-func NewDB() (*gorm.DB, error) {
+func NewDB(dsn string, metricsPort uint32) (*gorm.DB, error) {
 	// Open a connection to the database
-	db, err := gorm.Open(cfg.Config.PostgresDialector, &gorm.Config{})
+	dialector := postgres.New(postgres.Config{DSN: dsn})
+	db, err := gorm.Open(dialector, &gorm.Config{})
+	
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +21,7 @@ func NewDB() (*gorm.DB, error) {
 		prometheus.New(
 			prometheus.Config{
 				DBName:         "PostgreSQL",
-				HTTPServerPort: cfg.Config.MetricsPort,
+				HTTPServerPort: metricsPort,
 				MetricsCollector: []prometheus.MetricsCollector{
 					&prometheus.Postgres{
 						VariableNames: []string{"Threads_running"},

@@ -42,9 +42,8 @@ func menuHandler(b *Bot, u *tgbotapi.Update) {
 // locationHandler write user lat/lon and TZ in DB & returning menu.
 func locationHandler(b *Bot, u *tgbotapi.Update) {
 	lat := u.Message.Location.Latitude
-	Lon := u.Message.Location.Longitude	
+	Lon := u.Message.Location.Longitude
 	tz := tz.GetTimeZoneByLatLon(lat, Lon)
-
 
 	user := models.User{
 		TelegramID: u.Message.From.ID,

@@ -2,71 +2,78 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"strconv"
+	"path/filepath"
 
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"gopkg.in/yaml.v3"
 )
 
-type config struct {
-	BotAPIKey         string
-	BotDebug          bool
-	PostgresDialector gorm.Dialector
-	MetricsHost       string
-	MetricsPort       uint32
-}
-
-var Config *config
+var Cfg *Config
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		panic("No .env file found")
-	}
-
-	cfg, err := newConfig()
+	err := ReadConfigYML("configs/config.yml")
 	if err != nil {
 		panic(err)
 	}
-
-	Config = cfg
-
-	log.Println("Load .env file completed.")
 }
 
-func newConfig() (*config, error) {
-	botDebug, err := strconv.ParseBool(getEnv("DEBUG"))
-	if err != nil {
-		return nil, err
-	}
+// Project - contains all project config.
+type Project struct {
+	debug bool
+}
 
-	// dsn user=gorm password=gorm dbname=gorm port=9920
-	dsn := fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%s",
-		getEnv("PG_USER"), getEnv("PG_PASSWORD"), getEnv("PG_DB_NAME"), getEnv("PG_HOST"), getEnv("PG_PORT"),
+// Database - contains all database config.
+type Database struct {
+	Host     string `yaml:"host"`
+	Port     uint32 `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Name     string `yaml:"name"`
+}
+
+func (d *Database) GetPostgresDialector() string {
+	return fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s port=%d",
+		d.User, d.Password, d.Name, d.Host, d.Port,
 	)
-	pgDialector := postgres.New(postgres.Config{DSN: dsn})
-
-	metricsPort, err := strconv.Atoi(getEnv("METRICS_PORT"))
-	if err != nil {
-		return nil, err
-	}
-
-	return &config{
-		BotAPIKey:         getEnv("TELEGRAM_BOT_API_KEY"),
-		BotDebug:          botDebug,
-		PostgresDialector: pgDialector,
-		MetricsHost:       getEnv("METRICS_HOST"),
-		MetricsPort:       uint32(metricsPort),
-	}, nil
 }
 
-func getEnv(key string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+// Telegram - contains all telegram config.
+type Telegram struct {
+	Token string `yaml:"token"`
+	Debug bool   `yaml:"debug"`
+}
+
+// Metrics - contains all metrics config.
+type Metrics struct {
+	Host string `yaml:"host"`
+	Port uint32 `yaml:"port"`
+}
+
+// Config - contains all configuration parameters in config package.
+type Config struct {
+	Project  Project  `yaml:"project"`
+	Database Database `yaml:"database"`
+	Telegram Telegram `yaml:"telegram"`
+	Metrics  Metrics  `yaml:"metrics"`
+}
+
+// ReadConfigYML - read configurations from file and init instance Config.
+func ReadConfigYML(filePath string) error {
+	file, err := os.Open(filepath.Clean(filePath))
+	if err != nil {
+		return err
 	}
 
-	panic("Variable not found: " + key)
+	decoder := yaml.NewDecoder(file)
+	if decodeErr := decoder.Decode(&Cfg); decodeErr != nil {
+		return decodeErr
+	}
+
+	err = file.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return nil
 }

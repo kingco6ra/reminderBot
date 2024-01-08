@@ -11,6 +11,6 @@ type UserRepoInterface interface {
 
 type ReminderRepoInterface interface {
 	CreateReminder(reminder *models.Reminder) error
-	GetAllUncompletedReminders() []models.Reminder
-	GetUserReminders(telegramUserID int) []models.Reminder
+	GetAllUncompletedReminders() ([]models.Reminder, error)
+	GetUserReminders(telegramUserID int) ([]models.Reminder, error)
 }

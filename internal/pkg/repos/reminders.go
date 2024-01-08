@@ -25,19 +25,19 @@ func (repo *RemindersRepository) CreateReminder(reminder *models.Reminder) error
 }
 
 // GetAllUncompletedReminders returning all uncompleted reminders for remind.
-func (repo *RemindersRepository) GetAllUncompletedReminders() []models.Reminder {
+func (repo *RemindersRepository) GetAllUncompletedReminders() ([]models.Reminder, error) {
 	var reminders []models.Reminder
 
-	repo.db.Where("completed = ? AND reminder_time >= ?", false, time.Now().UTC()).Find(&reminders)
+	err := repo.db.Where("completed = ? AND reminder_time >= ?", false, time.Now().UTC()).Find(&reminders).Error
 
-	return reminders
+	return reminders, err
 }
 
 // GetUserReminders returning user reminders with selected status.
-func (repo *RemindersRepository) GetUserReminders(telegramUserID int) []models.Reminder {
+func (repo *RemindersRepository) GetUserReminders(telegramUserID int) ([]models.Reminder, error) {
 	var reminders []models.Reminder
 	
-	repo.db.Find(&reminders, models.Reminder{TelegramUserID: telegramUserID})
+	err := repo.db.Find(&reminders, models.Reminder{TelegramUserID: telegramUserID}).Error
 
-	return reminders
+	return reminders, err
 }
